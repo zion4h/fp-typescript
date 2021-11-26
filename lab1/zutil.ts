@@ -1,5 +1,5 @@
-//  打印语句简写版
-const log = (msg?: any, ...optionalParams: any[]) => console.log(msg, ...optionalParams)
+//  简化打印语句：方便测试
+export const log = (msg?: any, ...optionalParams: any[]) => console.log(msg, ...optionalParams)
 
 //  lazy
 const memorize = <T>(f: () => T): () => T =>{
@@ -43,6 +43,23 @@ abstract class StreamBase<A> {
 
   takeWhile(this: Stream<A>, p: (a: A) => boolean): Stream<A> {
     return this.foldRight(() => none(), (a, b) => p(a) ? cons(() => a, b) : b())
+  }
+
+  //  取位于index坐标上的数
+  get(this: Stream<A>, i: number): A {
+    if (this.tag === "none")
+      throw new Error("[Type Error]: function \'get\' cannot apply to the data \'Nil\'.");
+      
+    const n = this.length()
+
+    if (i >= n)  
+      throw new Error("the input data of function [get] should be smaller than length n.")
+    else if (i < 0) 
+      return this.get(this.length() + i)
+    else if (i === 0) 
+      return this.h()
+
+    return this.t().get(i - 1);
   }
   
   //  丢弃前n个元素：配合take使用方便截取
@@ -121,22 +138,13 @@ abstract class StreamBase<A> {
   // map Stream函数映射
   map<B>(this: Stream<A>, f: (a: A) => B): Stream<B> {
     const self = this
-    return this.flatMap(a => Stream(f(a)))
+    return this.flatMap(a => stream(f(a)))
   }
-  // map<B>(this: Stream<A>, f: (a: A) => B): Stream<B> {
-  //   return this.foldRight(() => none(), (a, b) => Stream(f(a)).append(b))
-  // }
   
   //  filter 过滤器
   filter(this: Stream<A>, p: (a: A) => boolean): Stream<A> {
-    return this.flatMap(a => p(a) ? Stream(a) : none())
+    return this.flatMap(a => p(a) ? stream(a) : none())
   }
-  // filter(this: Stream<A>, p: (a: A) => boolean): Stream<A> {
-  //   return this.foldRight(
-  //     () => none(),
-  //     (a, b) => p(a) ? cons(() => a, b) : b(),
-  //   )
-  // }
 
   length(this:Stream<A>):number {
     return this.foldRight(() => 0, (a, b) => b() + 1)
@@ -152,7 +160,7 @@ abstract class StreamBase<A> {
     return ans
   }
 
-  toString(this:Stream<A>) {
+  toString(this:Stream<A>): string {
     var msg = "Stream("
     switch (this.tag) {
         case "none": break
@@ -166,7 +174,7 @@ abstract class StreamBase<A> {
         }
     }
     msg += ")"
-    log(msg)
+    return msg
   }
 }
 
@@ -193,10 +201,11 @@ export const cons = <T>(h: () => T, t: () => Stream<T>): Stream<T> =>
 
 export const none = <T>(): Stream<T> => Nil.NIL
 
-export const Stream = <T>(...s: T[]): Stream<T> => {
+export const stream = <T>(...s: T[]): Stream<T> => {
   if (s.length === 0)
     return none()
   else
-    return cons(() => s[0], () => Stream(...s.slice(1)))
+    return cons(() => s[0], () => stream(...s.slice(1)))
 }
-export default { Cons, Nil, cons, none, Stream }
+
+export default { log, Cons, Nil, cons, none, stream}
