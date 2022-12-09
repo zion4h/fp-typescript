@@ -1,10 +1,19 @@
-import { log, Stream, stream } from "./zutil"
+import { log, Stream, stream, cons } from "./zutil"
 
 const reduce = <A, B>(l: Stream<A>, z: B, f: (a: A, b: B) => B): B => {
   if (l.tag === "none")
     return z
   else return f(l.h(), reduce(l.t(), z, f))
 }
+
+const foldr = <A, B>(f: (a: A, b: B)=>B, x: B) => (l: Stream<A>):B => {
+  if (l.tag === "none")
+    return x
+  else return f(l.h(), foldr(f, x)(l.t()))
+}
+// const append = <T>(a: Stream<T>, b: Stream<T>): Stream<T> => {
+//   return foldr(cons, b)(a)
+// }
 
 const sum = (l: Stream<number>): number => 
   reduce(l, 0, (a, b) => a + b)
